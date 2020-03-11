@@ -1,0 +1,49 @@
+{% load static %}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    {% load static %}
+    <title>Marengue: {% block title %}Main{% endblock %}</title>
+    <link rel="stylesheet" href="{% static "marengue_style.css" %}">
+</head>
+<body>
+    <div class="logo">
+        <h1 class="logo-text">Marengue</h1>
+    </div>
+    <header class="menu">
+        <p>
+            <a href="{% url 'students:index' %}">MAIN PAGE</a>
+            &nbsp;
+            <a href="{% url 'students:contacts' %}">CONTACTS</a>
+            &nbsp;
+            <a href="{% url 'students:lessons' %}">Lessons</a>
+            &nbsp; |
+            &nbsp; {{ user.username }}
+            {% if not user.is_authenticated %}
+            <a href="{% url 'accounts:login' %}">Login</a>
+            {% else %}
+            <a href="{% url 'accounts:profile' %}">Profile</a>
+            |
+            <a href="{% url 'accounts:logout' %}">Logout</a>
+            {% endif %}
+        </p>
+    </header>
+    <section class="content-box">
+        <div class="content">
+            {% block content %}
+            {% endblock %}
+        </div>
+    </section>
+    <footer>
+        {% if messages %}
+            <ul class="messages">
+                {% for message in messages %}
+                <li{% if message.tags %} class="{{ message.tags }}"{% endif %}>{{ message }}</li>
+                {% endfor %}
+            </ul>
+        {% endif %}
+    </footer>
+</body>
+</html>

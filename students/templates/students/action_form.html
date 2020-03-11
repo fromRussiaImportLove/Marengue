@@ -1,0 +1,26 @@
+{% extends "students/base.html" %}
+{% block title %}{{ action }}ing new {{ subject }}{% endblock title %}
+
+{% block content %}
+
+
+{% if submitted %}
+    <p class="success">
+        Your successfully {{ action }}ed new {{ subject }}.<br>
+        <a href="{% url 'students:index' %}">Return to list of students</a>
+    </p>
+
+{% else %}
+    <form action="" method="post" novalidate>
+    {% csrf_token %}
+    <table>
+        {{ form.as_table }}
+        <tr>
+            <td>&nbsp;</td>
+            <td><input type="submit" value="Submit"></td>
+        </tr>
+    </table>
+    </form>
+{% endif %}
+
+{% endblock content %}

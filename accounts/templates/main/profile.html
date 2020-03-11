@@ -1,0 +1,17 @@
+{% extends "students/base.html" %}
+
+{% block title %}Profile of {{ user.username }}{% endblock title %}
+
+
+{% block content %}
+
+<h2>Profile for {{ user.username }}</h2>
+
+some field will there
+
+<br>
+<a href="{% url 'accounts:profile_change' %}">Change profile</a>
+<br>
+<a href="{% url 'accounts:password_change' %}">Change password</a>
+
+{% endblock content %}

@@ -1,0 +1,21 @@
+{% extends "students/base.html" %}
+{% block title %}Contacts{% endblock title %}
+
+{% block content %}
+
+
+{% if submitted %}
+    <p class="success">
+        Your successfully {{ action }}ed new {{ subject }}.<br>
+        <a href="{% url 'students:index' %}">Return to list of students</a>
+    </p>
+
+{% else %}
+    <form action="" method="post" novalidate>
+    {% csrf_token %}
+        {{ form.as_p }}
+        <input type="submit" value="Submit">
+    </form>
+{% endif %}
+
+{% endblock content %}

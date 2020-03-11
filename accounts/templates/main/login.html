@@ -1,0 +1,21 @@
+{% extends "students/base.html" %}
+
+{% block title %}Enter to site{% endblock title %}
+
+
+{% block content %}
+
+<h2>Enter</h2>
+
+{% if user.is_authenticated %}
+<p>Are you already login.</p>
+{% else %}
+<form method="post">
+    {% csrf_token %}
+    {{ form.as_p }}
+    <input type="submit" value="Enter">
+    {# {% buttons submit='Enter' %}{% endbuttons %} #}
+</form>
+{% endif %}
+
+{% endblock content %}
