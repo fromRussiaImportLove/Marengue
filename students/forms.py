@@ -1,34 +1,40 @@
 from django import forms
-from .models import Student, Lesson, District, Price, CHOICES_GENDER
+from .models import Student, Lesson, District, Price, Level, Money, CHOICES_GENDER, CHOICES_LESSON_STATUS
+from phonenumber_field.formfields import PhoneNumberField
+from phonenumber_field.widgets import PhoneNumberInternationalFallbackWidget
 from django.utils.translation import gettext_lazy as _
+from django.contrib.admin import widgets
 
 
-
-class StudentAddForm(forms.ModelForm):
+class StudentForm(forms.ModelForm):
     first_name = forms.CharField(max_length=30, label='First name of student')
     second_name = forms.CharField(max_length=30, label='Second name of student')
-    #gender = forms.ChoiceField(widget=forms.RadioSelect(attrs={'class': 'radio-control'}), choices=CHOICES_GENDER, initial='man'),
-    gender = forms.CharField(widget=forms.RadioSelect(choices=CHOICES_GENDER), initial='man'),
-    #birthday = forms.DateField(required=False, help_text='MM/DD/YYYY', widget=forms.SelectDateWidget)
-    birthday = forms.DateField(
-         label=_('Date of birth'),
-         help_text='DD-MM-YYYY',
-         input_formats=('%d.%m.%Y', '%d/%m/%Y', '%d-%m-%Y'))
+    gender = forms.IntegerField(widget=forms.RadioSelect(
+        choices=CHOICES_GENDER, attrs={'class': 'radio-control'}))
+    #birthday = forms.DateField(
+    #     label=_('Date of birth'),
+    #     help_text='DD-MM-YYYY',)
+         #input_formats=('%d.%m.%Y', '%d/%m/%Y', '%d-%m-%Y'))
+    #phone = PhoneNumberField(widget=forms.TextInput(attrs={'placeholder': _('Phone')}),
+    #                   label=_("Phone number"), required=False)
+    phone = PhoneNumberField(widget=PhoneNumberInternationalFallbackWidget(), required=False)
 
     district = forms.ModelChoiceField(queryset=District.objects.all())
-    source = forms.CharField(widget=forms.Textarea, required=False, label="Origin of opportunity")
+    source = forms.CharField(widget=forms.Textarea(attrs={'placeholder': 'Search'}), required=False, label="Origin of opportunity")
 
     class Meta:
         model = Student
         fields = '__all__'
-        '''widgets = {
-            'gender': forms.RadioSelect(choices=CHOICES_GENDER)
-        }'''
+        widgets = {
+            #'gender': forms.RadioSelect(choices=CHOICES_GENDER, initial='1'),
+            'birthday': widgets.AdminDateWidget(), #forms.DateInput(attrs={'placeholder': 'MM-DD-YYYY'}),
+
+        }
 
 
-class LessonAddForm(forms.ModelForm):
+class LessonForm(forms.ModelForm):
     student = forms.ModelChoiceField(queryset=Student.objects.all(), label='Student')
-    date = forms.DateField(help_text='MM/DD/YYYY', widget=forms.SelectDateWidget)
+    #date = forms.DateTimeField(help_text='MM/DD/YYYY', widget=forms.SplitDateTimeWidget())
     lesson_long = forms.IntegerField(min_value=1, label='Amount minutes for lesson', initial=60)
 
     class Meta:
@@ -36,17 +42,49 @@ class LessonAddForm(forms.ModelForm):
         fields = ['student', 'date', 'lesson_long']
         labels = {'student': _('Select Student'), }
         help_texts = {'student': _('With who you lesson'), }
+        widgets = {
+            #'date': widgets.AdminDateWidget,
+            #widgets.AdminTimeWidget,
+            #widgets.AdminSplitDateTime(),
+        }
 
 
-class PriceAddForm(forms.ModelForm):
+class PriceForm(forms.ModelForm):
     student = forms.ModelChoiceField(queryset=Student.objects.all(), label='Student')
-    start_date = forms.DateField(help_text='MM/DD/YYYY', widget=forms.SelectDateWidget)  # TODO can make select old date
+    #start_date = forms.DateField(help_text='MM/DD/YYYY', widget=forms.SelectDateWidget)  # TODO can make select old date
     cost = forms.IntegerField(min_value=0, label='Price', help_text='How much for lesson pay', initial=0)
     duration = forms.IntegerField(min_value=1, label='Amount minutes for lesson', initial=60)
 
     class Meta:
         model = Price
         fields = ['student', 'start_date', 'cost', 'duration']
+        widgets = {
+            'start_date': widgets.AdminDateWidget(),
+        }
+
+
+class LevelForm(forms.ModelForm):
+
+    class Meta:
+        model = Level
+        fields = ['level_name', 'rank']
+
+
+class DistrictForm(forms.ModelForm):
+
+    class Meta:
+        model = District
+        fields = ['district_name']
+
+
+class MoneyForm(forms.ModelForm):
+    date = forms.DateField(help_text='MM/DD/YYYY', widget=forms.SelectDateWidget)
+    start_date = forms.DateField(help_text='MM/DD/YYYY', widget=forms.SelectDateWidget)
+    student = forms.ModelChoiceField(queryset=Student.objects.all(), label='Student')
+
+    class Meta:
+        model = Money
+        fields = '__all__'
 
 
 class ContactForm(forms.Form):

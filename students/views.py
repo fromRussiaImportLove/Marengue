@@ -1,7 +1,7 @@
 from django.shortcuts import render, get_object_or_404, get_list_or_404, redirect, reverse
 from . import forms
-from .models import Student, Price, Lesson, District
-from django.http import HttpResponseRedirect
+from .models import Student, Price, Lesson, District, Level, Money
+from django.http import HttpResponseRedirect, HttpResponse
 from django.utils import timezone
 from django.core.paginator import Paginator
 from django.views.generic.edit import FormView
@@ -9,9 +9,14 @@ from django.views.generic.list import ListView
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
-from datetime import date
+from datetime import date, datetime
 
 # from django.urls import reverse
+import json
+import logging
+
+# Get an instance of a logger
+logger = logging.getLogger(__name__)
 
 @login_required
 def index(request):
@@ -42,7 +47,7 @@ def student_detail(request, student_id):
     for lesson in lessons:
         actual_tariff = set()
         for price in prices:
-            if lesson.date >= price.start_date:
+            if lesson.date.date() >= price.start_date:
                 actual_tariff.add(price.start_date)
         if actual_tariff != set():
             price_lesson[lesson.date] = prices.filter(start_date=max(actual_tariff))[0].tariff() \
@@ -74,17 +79,57 @@ def del_object(_model, subj_id):
 #    return redirect('students:index')
 
 @login_required
-def subject_action(request, subject, action, subj_id=False, student_id = None):
+def settings_view(request):
+    level = Level.objects.order_by('rank')
+    district = District.objects.order_by('district_name')
+
+    if request.method == 'POST':
+        form = forms.LevelForm(request.POST)
+
+        if form.is_valid():
+            form.save()
+            return redirect('students:settings')
+        else:
+            logger.info("Form invalid")
+            return HttpResponse(json.dumps(form.errors))
+
+    context = {
+        'LevelForm': forms.LevelForm,
+        'DistrictForm': forms.DistrictForm,
+        'district': district,
+        'level': level
+    }
+
+    return render(request, 'students/settings.html', context)
+
+
+@login_required
+def subject_action(request, subject, action, subj_id=False, student_id=None, from_settings=False):
     _forms = {
-        'student': forms.StudentAddForm,
-        'lesson': forms.LessonAddForm,
-        'price': forms.PriceAddForm
+        'student': forms.StudentForm,
+        'lesson': forms.LessonForm,
+        'price': forms.PriceForm,
+        'level': forms.LevelForm,
+        'district': forms.DistrictForm,
+        'money': forms.MoneyForm
     }
 
     _models = {
         'student': Student,
         'lesson': Lesson,
-        'price': Price
+        'price': Price,
+        'district': District,
+        'level': Level,
+        'money': Money
+    }
+
+    _initial = {
+        'student': None,
+        'lesson': {'student': student_id, 'date': datetime.today()},
+        'price': {'student': student_id, 'start_date': date.today()},
+        'district': None,
+        'level': None,
+        'money': {'student': student_id, 'start_date': date.today()},
     }
 
     subj_instance = None
@@ -95,18 +140,18 @@ def subject_action(request, subject, action, subj_id=False, student_id = None):
 
         if form.is_valid():
             form.save()
+            if from_settings: return redirect('students:settings')
             if student_id: return redirect('students:detail', student_id=student_id)
             return redirect('students:index')  # TODO make success redirect, may be request.referer
 
             # ('students:student_add', args=[submitted])
             # #HttpResponseRedirect(reverse('students:student_add')) /
+        else:
+            logger.info("Form invalid")
+            return HttpResponse(json.dumps(form.errors))
 
     if action == 'add':
-        form = _forms[subject](initial={
-            'student': student_id,
-            'date': date.today(),
-            'start_date': date.today()
-        })
+        form = _forms[subject](initial=_initial[subject])
 
     if action == 'edit':
         form = _forms[subject](instance=subj_instance)

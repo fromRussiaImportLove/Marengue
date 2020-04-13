@@ -1,0 +1,53 @@
+{% extends "students/base.html" %}
+{% block title %}Settings{% endblock title %}
+
+{% block content %}
+
+    <table>
+        <caption><b>Настройка справочников</b></caption>
+        <thead><tr><th>Районы</th><th>Уровни</th>></tr>></thead>
+    <tbody><tr><td>
+    {% for d in district %}
+        {{ d }}
+
+        <a href="{% url 'students:subj_action' 'district' 'edit' d.id 1 %}">EDIT d#{{d.id}}</a>
+        <a href="{% url 'students:subj_action' 'district' 'delete' d.id 1 %}">DELETE d#{{d.id}} </a>
+        <br>
+    {% endfor %}
+
+    <form action="" method="post" novalidate>
+    {% csrf_token %}
+    <table>
+        {{ DistrictForm.as_table }}
+        <tr>
+            <td></td>
+            <td><input type="submit" value="Submit"></td>
+        </tr>
+    </table>
+    </form>
+
+    </td><td>
+    {% for l in level %}
+        {{ l.rank }}
+        {{ l }}
+
+        <a href="{% url 'students:subj_action' 'level' 'edit' l.id 1 %}">EDIT l#{{l.id}}</a>
+        <a href="{% url 'students:subj_action' 'level' 'delete' l.id 1 %}">DELETE l#{{l.id}} </a>
+        <br>
+    {% endfor %}
+
+    <form action="" method="post" novalidate>
+    {% csrf_token %}
+    <table>
+        {{ LevelForm.as_table }}
+        <tr>
+            <td>&nbsp;</td>
+            <td><input type="submit" value="Submit"></td>
+        </tr>
+    </table>
+    </form>
+
+    </td></tr>
+    </tbody>
+    </table>
+{% endblock content %}
