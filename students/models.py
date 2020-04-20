@@ -64,7 +64,7 @@ class Price(models.Model):
 class Lesson(models.Model):
     student = models.ForeignKey(Student, on_delete=models.CASCADE, related_name='lessons')
     date = models.DateTimeField(default=datetime.datetime.today)
-    lesson_long = models.IntegerField(default=student.default_lesson_time)
+    lesson_long = models.IntegerField()
     skype = models.BooleanField(default=False)
     googlecal_event_id = models.CharField(max_length=1024, blank=True, null=True)
     status = models.IntegerField(default=0, choices=CHOICES_LESSON_STATUS)
