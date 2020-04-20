@@ -41,6 +41,7 @@ class Student(models.Model):
     email = models.EmailField(blank=True, null=True, unique=True)
     start_date = models.DateField(blank=True, null=True)
     source = models.ForeignKey(Source, on_delete=models.PROTECT, blank=True, null=True)
+    default_lesson_time = models.IntegerField(blank=True, null=True)
 
     def __str__(self):
         return str(self.second_name)+' '+str(self.first_name)
@@ -63,7 +64,7 @@ class Price(models.Model):
 class Lesson(models.Model):
     student = models.ForeignKey(Student, on_delete=models.CASCADE, related_name='lessons')
     date = models.DateTimeField(default=datetime.datetime.today)
-    lesson_long = models.IntegerField()
+    lesson_long = models.IntegerField(default=student.default_lesson_time)
     skype = models.BooleanField(default=False)
     googlecal_event_id = models.CharField(max_length=1024, blank=True, null=True)
     status = models.IntegerField(default=0, choices=CHOICES_LESSON_STATUS)
