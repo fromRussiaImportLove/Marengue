@@ -11,14 +11,7 @@ class StudentForm(forms.ModelForm):
     second_name = forms.CharField(max_length=30, label='Second name of student')
     gender = forms.IntegerField(widget=forms.RadioSelect(
         choices=CHOICES_GENDER, attrs={'class': 'radio-control'}))
-    #birthday = forms.DateField(
-    #     label=_('Date of birth'),
-    #     help_text='DD-MM-YYYY',)
-         #input_formats=('%d.%m.%Y', '%d/%m/%Y', '%d-%m-%Y'))
-    #phone = PhoneNumberField(widget=forms.TextInput(attrs={'placeholder': _('Phone')}),
-    #                   label=_("Phone number"), required=False)
     phone = PhoneNumberField(widget=PhoneNumberInternationalFallbackWidget(), required=False)
-
     district = forms.ModelChoiceField(queryset=District.objects.all())
     source = forms.CharField(widget=forms.Textarea(attrs={'placeholder': 'Search'}), required=False, label="Origin of opportunity")
 
@@ -26,32 +19,27 @@ class StudentForm(forms.ModelForm):
         model = Student
         fields = '__all__'
         widgets = {
-            #'gender': forms.RadioSelect(choices=CHOICES_GENDER, initial='1'),
-            'birthday': widgets.AdminDateWidget(), #forms.DateInput(attrs={'placeholder': 'MM-DD-YYYY'}),
-
+            'birthday': widgets.AdminDateWidget(),
         }
 
 
 class LessonForm(forms.ModelForm):
     student = forms.ModelChoiceField(queryset=Student.objects.all(), label='Student')
-    #date = forms.DateTimeField(help_text='MM/DD/YYYY', widget=forms.SplitDateTimeWidget())
+    date = forms.SplitDateTimeField(widget=forms.SplitDateTimeWidget())
     lesson_long = forms.IntegerField(min_value=1, label='Amount minutes for lesson', initial=60)
 
     class Meta:
         model = Lesson
-        fields = ['student', 'date', 'lesson_long']
+        fields = ['student', 'date', 'lesson_long', 'skype', 'status']
         labels = {'student': _('Select Student'), }
         help_texts = {'student': _('With who you lesson'), }
         widgets = {
-            #'date': widgets.AdminDateWidget,
-            #widgets.AdminTimeWidget,
-            #widgets.AdminSplitDateTime(),
+            'date': widgets.AdminSplitDateTime(),
         }
 
 
 class PriceForm(forms.ModelForm):
     student = forms.ModelChoiceField(queryset=Student.objects.all(), label='Student')
-    #start_date = forms.DateField(help_text='MM/DD/YYYY', widget=forms.SelectDateWidget)  # TODO can make select old date
     cost = forms.IntegerField(min_value=0, label='Price', help_text='How much for lesson pay', initial=0)
     duration = forms.IntegerField(min_value=1, label='Amount minutes for lesson', initial=60)
 
