@@ -22,6 +22,13 @@ class Level(models.Model):
         return self.level_name
 
 
+class Source(models.Model):
+    source_name = models.CharField(max_length=128)
+
+    def __str__(self):
+        return self.source_name
+
+
 class Student(models.Model):
     first_name = models.CharField(max_length=30)
     second_name = models.CharField(max_length=30)
@@ -33,6 +40,7 @@ class Student(models.Model):
     phone = PhoneNumberField(blank=True, null=True, help_text='Contact phone number')
     email = models.EmailField(blank=True, null=True, unique=True)
     start_date = models.DateField(blank=True, null=True)
+    source = models.ForeignKey(Source, on_delete=models.PROTECT, blank=True, null=True)
 
     def __str__(self):
         return str(self.second_name)+' '+str(self.first_name)
@@ -53,7 +61,7 @@ class Price(models.Model):
 
 
 class Lesson(models.Model):
-    student = models.ForeignKey(Student, on_delete=models.CASCADE)
+    student = models.ForeignKey(Student, on_delete=models.CASCADE, related_name='lessons')
     date = models.DateTimeField(default=datetime.datetime.today)
     lesson_long = models.IntegerField()
     skype = models.BooleanField(default=False)
@@ -66,7 +74,7 @@ class Lesson(models.Model):
 
 
 class Money(models.Model):
-    student = models.ForeignKey(Student, on_delete=models.CASCADE)
+    student = models.ForeignKey(Student, on_delete=models.CASCADE, related_name='balance')
     date = models.DateField(default=datetime.date.today)
     transaction = models.DecimalField(max_digits=10, decimal_places=2)
 
