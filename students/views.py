@@ -1,22 +1,27 @@
-from django.shortcuts import render, get_object_or_404, get_list_or_404, redirect, reverse
-from . import forms
-from .models import Student, Price, Lesson, District, Level, Money
-from django.http import HttpResponseRedirect, HttpResponse
-from django.utils import timezone
-from django.core.paginator import Paginator
-from django.views.generic.edit import FormView
-from django.views.generic.list import ListView
-from django.contrib.auth.mixins import LoginRequiredMixin
-from django.contrib.auth.decorators import login_required
-from django.contrib import messages
-from datetime import date, datetime
-
-# from django.urls import reverse
 import json
 import logging
+from datetime import date, datetime
+
+from django.contrib.auth.decorators import login_required
+from django.contrib.auth.mixins import LoginRequiredMixin
+from django.core.paginator import Paginator
+from django.http import HttpResponse
+from django.shortcuts import get_object_or_404, redirect, render
+from django.utils import timezone
+from django.views.generic.edit import FormView
+from django.views.generic.list import ListView
+
+from marengue import calendarpython
+from students import lesson_sync
+
+from . import forms
+from .models import District, Lesson, Level, Money, Price, Source, Student
+
+googleCal = calendarpython.MarengueCal()
 
 # Get an instance of a logger
 logger = logging.getLogger(__name__)
+
 
 @login_required
 def index(request):
@@ -31,60 +36,57 @@ def index(request):
     return render(request, 'students/index.html', context)
 
 
-# Create your views here.
-
 @login_required
-def student_detail(request, student_id):
+def student_detail_view(request, student_id):
     student = get_object_or_404(Student, pk=student_id)
-    #    price = get_list_or_404(Price.objects.order_by('-start_date'), student=student_id)
-    #    lesson = get_list_or_404(Lesson.objects.order_by('-date'), student=student_id)
+    lessons = student.lessons.filter(status=1).order_by('-date')
+    dflt = student.default_lesson_time
+    if student.default_lesson_time is None:
+        dflt = 60
 
-    prices = Price.objects.filter(student_id=student_id).order_by('-start_date')
-    lessons = Lesson.objects.filter(student_id=student_id).order_by('-date')
+    tariff_main = student.tarif_live() * dflt
+    tariff_skype = student.tarif_skype() * dflt
 
-    price_error = False
-    price_lesson = {}
-    for lesson in lessons:
-        actual_tariff = set()
-        for price in prices:
-            if lesson.date.date() >= price.start_date:
-                actual_tariff.add(price.start_date)
-        if actual_tariff != set():
-            price_lesson[lesson.date] = prices.filter(start_date=max(actual_tariff))[0].tariff() \
-                                        * lesson.lesson_long // 60
-        else:
-            price_lesson[lesson.date] = 'Warn! Lesson without setting price!!!'
-            price_error = True
+    balance = student.balance()
 
-    if price_error:
-        sum_price = 'Can\'t count, couse some lesson don\'t have price!'
-    else:
-        sum_price = sum(price_lesson.values())
+    len_lesson = lessons.count()
+    sum_lesson = sum(lesson.lesson_long for lesson in lessons)
+    cancels = student.lessons.filter(status=2)
+    income = sum(lesson.cost() for lesson in lessons)
+    lost = sum(lesson.cost() for lesson in cancels)
 
     context = {
         'student': student,
-        'birthday': student.birthday,
-        'district': student.district,
-        'price': prices,
         'lessons': lessons,
-        'price_lesson': price_lesson,
-        'sum_price': sum_price
+        'len_lesson': len_lesson,
+        'sum_lesson': sum_lesson,
+        'cancels': cancels.count(),
+        'tariff_main': tariff_main,
+        'tariff_skype': tariff_skype,
+        'income': income,
+        'lost': lost,
+        'dflt': dflt,
+        'balance': balance,
+
     }
+
     return render(request, 'students/student_detail.html', context)
 
-@login_required
-def del_object(_model, subj_id):
-    obj = get_object_or_404(_model, pk=subj_id)
-    obj.delete()
-#    return redirect('students:index')
 
 @login_required
-def settings_view(request):
+def settings_view(request, option=None):
     level = Level.objects.order_by('rank')
     district = District.objects.order_by('district_name')
+    source = Source.objects.order_by('source_name')
+    forms_set = {
+        'source': forms.SourceForm,
+        'level': forms.LevelForm,
+        'district': forms.DistrictForm
+    }
 
     if request.method == 'POST':
-        form = forms.LevelForm(request.POST)
+
+        form = forms_set[option](request.POST)
 
         if form.is_valid():
             form.save()
@@ -94,79 +96,81 @@ def settings_view(request):
             return HttpResponse(json.dumps(form.errors))
 
     context = {
-        'LevelForm': forms.LevelForm,
-        'DistrictForm': forms.DistrictForm,
+        'forms_set': forms_set,
         'district': district,
-        'level': level
+        'level': level,
+        'source': source,
     }
 
     return render(request, 'students/settings.html', context)
 
 
 @login_required
-def subject_action(request, subject, action, subj_id=False, student_id=None, from_settings=False):
-    _forms = {
-        'student': forms.StudentForm,
-        'lesson': forms.LessonForm,
-        'price': forms.PriceForm,
-        'level': forms.LevelForm,
-        'district': forms.DistrictForm,
-        'money': forms.MoneyForm
-    }
+def subject_action_view(request, subject, action, subj_id=None, student_id=None, from_settings=False):
 
-    _models = {
-        'student': Student,
-        'lesson': Lesson,
-        'price': Price,
-        'district': District,
-        'level': Level,
-        'money': Money
-    }
+    class Subj:
+        subject_set = {
+            'student': [forms.StudentForm, Student, None],
+            'lesson': [forms.LessonForm, Lesson, {'student': student_id, 'date': datetime.today()}],
+            'price': [forms.PriceForm, Price, {'student': student_id, 'start_date': date.today()}],
+            'money': [forms.MoneyForm, Money, {'student': student_id, 'start_date': date.today()}],
+            'level': [forms.LevelForm, Level, None],
+            'district': [forms.DistrictForm, District, None],
+            'source': [forms.SourceForm, Source, None],
+        }
 
-    _initial = {
-        'student': None,
-        'lesson': {'student': student_id, 'date': datetime.today()},
-        'price': {'student': student_id, 'start_date': date.today()},
-        'district': None,
-        'level': None,
-        'money': {'student': student_id, 'start_date': date.today()},
-    }
+        def __init__(self, subject):
+            self.form = self.subject_set[subject][0]
+            self.model = self.subject_set[subject][1]
+            self.init = self.subject_set[subject][2]
 
+    subj = Subj(subject)
+
+    if student_id:
+        redirect_ = redirect('students:detail', student_id=student_id)
+    elif from_settings:
+        redirect_ = redirect('students:settings',)
+    elif subject == 'student' and action == 'edit':
+        redirect_ = redirect('students:detail', student_id=subj_id)
+    else:
+        redirect_ = redirect('students:index',)
+
+    del_button = False
     subj_instance = None
-    if subj_id: subj_instance = _models[subject].objects.get(pk=subj_id)
+    if subj_id is not None: subj_instance = get_object_or_404(subj.model, pk=subj_id)
+
+    if action == 'delete':
+        if request.method == 'POST':
+            obj = get_object_or_404(subj.model, pk=subj_id)
+            obj.delete()
+            return redirect_
+        del_button = 'warning'
+        form = get_object_or_404(subj.model, pk=subj_id)
 
     if request.method == 'POST':
-        form = _forms[subject](request.POST, instance=subj_instance)
+        form = subj.form(request.POST, instance=subj_instance)
 
         if form.is_valid():
             form.save()
-            if from_settings: return redirect('students:settings')
-            if student_id: return redirect('students:detail', student_id=student_id)
-            return redirect('students:index')  # TODO make success redirect, may be request.referer
-
-            # ('students:student_add', args=[submitted])
-            # #HttpResponseRedirect(reverse('students:student_add')) /
+            return redirect_
         else:
             logger.info("Form invalid")
             return HttpResponse(json.dumps(form.errors))
 
     if action == 'add':
-        form = _forms[subject](initial=_initial[subject])
+        form = subj.form(initial=subj.init)
 
     if action == 'edit':
-        form = _forms[subject](instance=subj_instance)
-
-    if action == 'delete':
-        obj = get_object_or_404(_models[subject], pk=subj_id)
-        obj.delete()
-        if student_id and subject != 'student': return redirect('students:detail', student_id=student_id)
-        return redirect('students:index')
+        form = subj.form(instance=subj_instance)
+        del_button = 'show'
 
     context = {
         'form': form,
         'subject': subject,
+        'subj_id': subj_id,
+        'student_id': student_id,
         'action': action,
-        'submitted': False,
+        'del_button': del_button,
     }
 
     return render(request, 'students/action_form.html', context)
@@ -184,12 +188,65 @@ class ContactView(LoginRequiredMixin, FormView):
         return super().form_valid(form)
 
 
+@login_required
+def google_cal_refresh(request):
+    googleCal.take_all_events()
+    return redirect('students:lessons')
+
+
+@login_required
+def google_cal_sync(request):
+    lesson_sync.sync_event_and_lesson_through_token()
+    return redirect('students:lessons')
+
+
+@login_required
+def student_lessons(request, student_id):
+    student = get_object_or_404(Student, pk=student_id)
+    lessons = student.lessons.order_by('-date')
+
+    context = {
+        'student': student,
+        'lessons': lessons,
+    }
+    return render(request, 'students/student_lessons.html', context)
+
+@login_required
+def student_prices(request, student_id):
+    student = get_object_or_404(Student, pk=student_id)
+    prices = student.prices.order_by('-start_date')
+
+    context = {
+        'student': student,
+        'prices': prices,
+    }
+    return render(request, 'students/student_prices.html', context)
+
+@login_required
+def student_payments(request, student_id):
+    student = get_object_or_404(Student, pk=student_id)
+    payments = student.payments.order_by('-date')
+
+    context = {
+        'student': student,
+        'payments': payments,
+    }
+    return render(request, 'students/student_payments.html', context)
+
+
+class StudentsListView(LoginRequiredMixin, ListView):
+    model = Student
+    paginate_by = 20
+
+
 class LessonsListView(LoginRequiredMixin, ListView):
 
     model = Lesson
-    paginate_by = 10  # if pagination is desired
+    paginate_by = 20  # if pagination is desired
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['now'] = timezone.now()
+        context['sync_elements'] = googleCal.marengue_sync_elements()
+        context['events'] = googleCal.marengue_all_events_list()
         return context

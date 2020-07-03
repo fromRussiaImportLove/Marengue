@@ -3,45 +3,36 @@
 
 {% block content %}
 
-    There is info about {{ student }}<br>
+    <h2>{{ student }} {% if not student.active %} АРХИВ {% endif %} </h2>
+    <a href="{% url 'students:subj_action' subject='student' action='edit' subj_id=student.id %}">редактировать</a>
 
-    For example:<br>
-        'student_firstname': {{ student.first_name }},<br>
-        'student_secondname': {{ student.second_name }},<br>
-        'birthday': {{ student.birthday }},<br>
-        'district': {{ student.district }},<br>
-        'price log':
-        &emsp;
-        <a href="{% url 'students:student_subj_action' student.id 'price' 'add' %}">ADD new price</a>
-        <br>
-        {% for p in price %}
-        from {{ p.start_date }} price is {{ p.cost }}, tariff is {{ p.tariff }},
-        &emsp;
-        <a href="{% url 'students:student_subj_action' student.id 'price' 'edit' p.id %}">EDIT price#{{p.id}}</a>
-        &emsp;
-        <a href="{% url 'students:student_subj_action' student.id 'price' 'delete' p.id %}">DELETE price#{{p.id}} </a>
-        <br>
-        {% endfor %}
-        'lessons':
-        &emsp;
-        <a href="{% url 'students:student_subj_action' student.id 'lesson' 'add' %}">ADD new lesson</a>
-        <br>
-        {% for l in lessons %}
-        {{ l.date }}: duration {{ l.lesson_long }} min, price =
-        {% for key,value in price_lesson.items %}
-            {% if key == l.date %}
-                {{ value }}
-            {% endif %}
-        {% endfor %}
-        &emsp;
-        <a href="{% url 'students:student_subj_action' student.id 'lesson' 'edit' l.id %}">EDIT lesson#{{l.id}}</a>
-        &emsp;
-        <a href="{% url 'students:student_subj_action' student.id 'lesson' 'delete' l.id %}">DELETE lesson#{{l.id}} </a>
-        <br>
-        {% endfor %} <br>
-        'sum_price': {{ sum_price }}
+    <p>Возраст: {{ student.calculate_age }} ({{ student.birthday }})<br>
+        Район: {{ student.district }}<br>
+        Tel: {{ student.phone }}<br>
+        E-mail: {{ student.email }}<br>
+        С нами уже {{ student.calculate_seniority }} (c {{ student.start_date }})<br>
+    </p>
 
-        <p><a href="{% url 'students:subj_action' subject='student' action='edit' subj_id=student.id %}">{{ student }} EDIT </a></p>
-        <p><a href="{% url 'students:subj_action' 'student' 'delete' student.id %}">{{ student }} DELETE</a></p>
+    <p>
+        Всего уроков состоялось: {{ len_lesson }}, общая длительность: {{ sum_lesson }} мин.
+        Отменено уроков: {{ cancels }}
+    </p>
+
+    <p>
+        Тариф очно: {{ tariff_main }} руб. за {{ dflt }} мин.<br>
+        Тариф skype: {{ tariff_skype }} руб. за {{ dflt }} мин.<br>
+        Доход за все время: {{ income }} руб.<br>
+        Недополучено за все время: {{ lost }} руб.
+    </p>
+
+    <p>
+        Баланс студента: {{ balance }}<br>
+        <a href="{% url 'students:student_subj_action' student.id 'money' 'add' %}">Внести денег</a>
+    </p>
+
+    <p><a href="{%url 'students:student_payments' student.id %}">Платежи студента</a></p>
+    <p><a href="{%url 'students:student_lessons' student.id %}">Занятия со студентом</a></p>
+    <p><a href="{%url 'students:student_prices' student.id %}">Тарифы для студента</a></p>
+
 
 {% endblock content %}

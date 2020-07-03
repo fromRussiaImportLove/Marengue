@@ -1,0 +1,49 @@
+{% extends "students/base.html" %}
+{% block title %} Students List {% endblock title %}
+
+{% block content %}
+
+<h1>My Students</h1>
+
+<p><a href="{% url 'students:subj_action' 'student' 'add' %}">add student</a></p>
+
+<table><tr>
+    <th>Student</th>
+    <th>Age</th>
+    <th>Active</th>
+    <th>Live Price</th>
+    <th>Skype Price</th>
+    </tr>
+{% for student in object_list %}
+    <tr>
+    <td><a href="{% url 'students:detail' student.id %}">{{ student }}</a></td>
+    <td>{{ student.calculate_age }}</td>
+    <td>{{ student.active }}</td>
+    <td>{{ student.tarif_live }}</td>
+    <td>{{ student.tarif_skype }}</td>
+    </tr>
+{% empty %}
+    No Students yet.
+{% endfor %}
+</table>
+
+<div class="pagination">
+    <span class="step-links">
+        {% if page_obj.has_previous %}
+            <a href="?page=1">&laquo; first</a>
+            <a href="?page={{ page_obj.previous_page_number }}">previous</a>
+        {% endif %}
+
+        <span class="current">
+            Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}.
+        </span>
+
+        {% if page_obj.has_next %}
+            <a href="?page={{ page_obj.next_page_number }}">next</a>
+            <a href="?page={{ page_obj.paginator.num_pages }}">last &raquo;</a>
+        {% endif %}
+    </span>
+</div>
+
+
+{% endblock content %}

@@ -1,0 +1,56 @@
+{% extends "students/base.html" %}
+{% block title %} Student Lessons {% endblock title %}
+
+{% block content %}
+
+<h1>Lessons with {{ student }}</h1>
+<a href="{% url 'students:detail' student.id %}">student card</a>
+
+<p><a href="{% url 'students:student_subj_action' student.id 'lesson' 'add' %}">Add new lesson</a></p>
+
+<table><tr>
+    <th>Date</th>
+    <th>Status</th>
+    <th>Duration</th>
+    <th>skype</th>
+    <th>cost</th>
+    <th>gCal sync</th>
+    <th>sync date</th>
+    <th>edit</th>
+    </tr>
+{% for lesson in lessons %}
+    <tr>
+    <td>{{ lesson.date|date:"Y-m-d" }} {{ lesson.date|date:"H:i" }}</td>
+    <td>{{ lesson.status }} {{ lesson.get_status_display }}</td>
+    <td>{{ lesson.lesson_long }}</td>
+    <td>{{ lesson.skype }}</td>
+    <td>{{ lesson.cost }}</td>
+    <td>{% if lesson.googlecal_event_id %}Synced{% else %}Not sync{% endif %}</td>
+    <td>{{ lesson.googlecal_updated|date:"Y-m-d H:i:s"|slice:":-3" }}</td>
+    <td><a href="{% url 'students:student_subj_action' student.id 'lesson' 'edit' lesson.id %}">edit #{{ lesson.id }}</a></td>
+    </tr>
+{% empty %}
+    No lessons yet.
+{% endfor %}
+</table>
+
+<div class="pagination">
+    <span class="step-links">
+        {% if page_obj.has_previous %}
+            <a href="?page=1">&laquo; first</a>
+            <a href="?page={{ page_obj.previous_page_number }}">previous</a>
+        {% endif %}
+
+        <span class="current">
+            Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}.
+        </span>
+
+        {% if page_obj.has_next %}
+            <a href="?page={{ page_obj.next_page_number }}">next</a>
+            <a href="?page={{ page_obj.paginator.num_pages }}">last &raquo;</a>
+        {% endif %}
+    </span>
+</div>
+
+
+{% endblock content %}

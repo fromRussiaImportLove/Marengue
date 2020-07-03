@@ -1,5 +1,6 @@
 from django import forms
-from .models import Student, Lesson, District, Price, Level, Money, CHOICES_GENDER, CHOICES_LESSON_STATUS
+from .models import Student, Lesson, District, Price, Level, Money, Source
+from .models import CHOICES_GENDER, CHOICES_LESSON_STATUS
 from phonenumber_field.formfields import PhoneNumberField
 from phonenumber_field.widgets import PhoneNumberInternationalFallbackWidget
 from django.utils.translation import gettext_lazy as _
@@ -13,13 +14,13 @@ class StudentForm(forms.ModelForm):
         choices=CHOICES_GENDER, attrs={'class': 'radio-control'}))
     phone = PhoneNumberField(widget=PhoneNumberInternationalFallbackWidget(), required=False)
     district = forms.ModelChoiceField(queryset=District.objects.all())
-    source = forms.CharField(widget=forms.Textarea(attrs={'placeholder': 'Search'}), required=False, label="Origin of opportunity")
 
     class Meta:
         model = Student
         fields = '__all__'
         widgets = {
             'birthday': widgets.AdminDateWidget(),
+            'start_date': widgets.AdminDateWidget(),
         }
 
 
@@ -45,7 +46,7 @@ class PriceForm(forms.ModelForm):
 
     class Meta:
         model = Price
-        fields = ['student', 'start_date', 'cost', 'duration']
+        fields = ['student', 'skype', 'start_date', 'cost', 'duration']
         widgets = {
             'start_date': widgets.AdminDateWidget(),
         }
@@ -63,6 +64,13 @@ class DistrictForm(forms.ModelForm):
     class Meta:
         model = District
         fields = ['district_name']
+
+
+class SourceForm(forms.ModelForm):
+
+    class Meta:
+        model = Source
+        fields = ['source_name']
 
 
 class MoneyForm(forms.ModelForm):

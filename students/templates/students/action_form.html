@@ -3,15 +3,16 @@
 
 {% block content %}
 
+{% if del_button == 'warning' %}
 
+    WARNING!<br>
+    This action is unrecoverable!<br>
 
-
-
-{% if submitted %}
-    <p class="success">
-        Your successfully {{ action }}ed new {{ subject }}.<br>
-        <a href="{% url 'students:index' %}">Return to list of students</a>
-    </p>
+    Are you sure to want delete this {{ subject }} {{ form }}?<br><br>
+    <form action="{% url 'students:subj_action' subject 'delete' subj_id %}" method="post">
+        {% csrf_token %}
+        <input type="submit" value="YES, DELETE">
+    </form>
 
 {% else %}
     <style>.calendar>table>caption{caption-side:unset}</style><!--caption fix for bootstrap4-->
@@ -27,6 +28,12 @@
         </tr>
     </table>
     </form>
+
+    {% if del_button == 'show' %}
+        <p class="success">
+            <a href="{% url 'students:subj_action' subject 'delete' subj_id %}">Delete {{ subject }}</a>
+        </p>
+    {% endif %}
 {% endif %}
 
 {% endblock content %}

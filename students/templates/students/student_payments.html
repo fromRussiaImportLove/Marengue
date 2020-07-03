@@ -1,0 +1,46 @@
+{% extends "students/base.html" %}
+{% block title %} Student Payments {% endblock title %}
+
+{% block content %}
+
+<h1>Payments from {{ student }}</h1>
+<a href="{% url 'students:detail' student.id %}">student card</a>
+
+<p><a href="{% url 'students:student_subj_action' student.id 'money' 'add' %}">Add new payment</a></p>
+
+<table><tr>
+    <th>Date</th>
+    <th>Amount</th>
+    <th>edit</th>
+    </tr>
+{% for payment in payments %}
+    <tr>
+    <td>{{ payment.date|date:"Y-m-d" }}</td>
+    <td>{{ payment.transaction }}</td>
+    <td><a href="{% url 'students:student_subj_action' student.id 'payment' 'edit' payment.id %}">edit #{{ payment.id }}</a></td>
+    </tr>
+{% empty %}
+    No payments yet.
+{% endfor %}
+</table>
+
+<div class="pagination">
+    <span class="step-links">
+        {% if page_obj.has_previous %}
+            <a href="?page=1">&laquo; first</a>
+            <a href="?page={{ page_obj.previous_page_number }}">previous</a>
+        {% endif %}
+
+        <span class="current">
+            Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}.
+        </span>
+
+        {% if page_obj.has_next %}
+            <a href="?page={{ page_obj.next_page_number }}">next</a>
+            <a href="?page={{ page_obj.paginator.num_pages }}">last &raquo;</a>
+        {% endif %}
+    </span>
+</div>
+
+
+{% endblock content %}

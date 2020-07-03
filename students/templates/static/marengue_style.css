@@ -1,8 +1,13 @@
 body, h1 {
     margin:0;
-
+    background-color: #bbb;
 }
 
+
+table, th, td {
+  border: 1px solid black;
+  border-collapse: collapse
+}
 
 a{
     text-decoration: none;
@@ -22,6 +27,7 @@ a:hover{
 
 .logo-text{
     color: pink;
+    background-color: black;
     font-style: italic;
     font-size: 24px;
     font-weight: 900;
@@ -47,4 +53,5 @@ a:hover{
     width: 700px;
     margin: auto;
     border: solid 1px #aaa;
+    padding: 5px 10px;
 }

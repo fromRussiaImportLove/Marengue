@@ -5,7 +5,7 @@
 
     <table>
         <caption><b>Настройка справочников</b></caption>
-        <thead><tr><th>Районы</th><th>Уровни</th>></tr>></thead>
+        <thead><tr><th>Районы</th><th>Уровни</th>><th>Источники</th></tr>></thead>
     <tbody><tr><td>
     {% for d in district %}
         {{ d }}
@@ -15,13 +15,13 @@
         <br>
     {% endfor %}
 
-    <form action="" method="post" novalidate>
+    <form action="district" method="post" novalidate>
     {% csrf_token %}
     <table>
-        {{ DistrictForm.as_table }}
+        {{ forms_set.district.as_table }}
         <tr>
             <td></td>
-            <td><input type="submit" value="Submit"></td>
+            <td><input type="submit" value="Add District"></td>
         </tr>
     </table>
     </form>
@@ -36,13 +36,33 @@
         <br>
     {% endfor %}
 
-    <form action="" method="post" novalidate>
+    <form action="level" method="post" novalidate>
     {% csrf_token %}
     <table>
-        {{ LevelForm.as_table }}
+        {{ forms_set.level.as_table }}
         <tr>
             <td>&nbsp;</td>
-            <td><input type="submit" value="Submit"></td>
+            <td><input type="submit" value="Add Level"></td>
+        </tr>
+    </table>
+    </form>
+
+    </td><td>
+    {% for s in source %}
+        {{ s }}
+
+        <a href="{% url 'students:subj_action' 'source' 'edit' s.id 1 %}">EDIT s#{{s.id}}</a>
+        <a href="{% url 'students:subj_action' 'source' 'delete' s.id 1 %}">DELETE s#{{s.id}} </a>
+        <br>
+    {% endfor %}
+
+    <form action="source" method="post" novalidate>
+    {% csrf_token %}
+    <table>
+        {{ forms_set.source.as_table }}
+        <tr>
+            <td>&nbsp;</td>
+            <td><input type="submit" value="Add Source"></td>
         </tr>
     </table>
     </form>
